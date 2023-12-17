@@ -12,7 +12,7 @@ def LineSearch(f,x,alpha,p):
     condition = np.dot(f(x+alpha*p),p) == 0
     return condition
 
-def modified_newton(f,g,H,x0):
+def modified_newton(f,g,H,x0,kmax,rho,tolgrad):
     # f is the function
     # g is the gradient
     # h is hessian
@@ -23,18 +23,15 @@ def modified_newton(f,g,H,x0):
     x1_vals.append(x0[1])
     f_vals.append(f(x0))
     
-    # maxNoOfIter can be moved to a value set by user
-    maxNoOfIter = 500
     n = np.shape(x0)[0]   #number of vars as the number of initilazers
-    rho = 0.55
     sigma = 0.4
     tau = 0.0 # how muh i want to regularize the hessian
     k = 0
-    epsilon = le-5
-    while k<maxNoOfIter:
-        gk = g(x0)
-        # set np.linalg.norm as a var
-        if np.linalg.norm(gk) < epsilon:
+    epsilon = 1e-5
+    while k<kmax:
+        gk = g(x0) 
+        gk_norm = np.linalg.norm(gk) # Calculate the norm of the gradient vector
+        if gk_norm < epsilon:
             break
         muk = np.power(np.linalg.norm(gk),1+tau) # mu k is the amount i want to push all the eigenvalues of the hessian
         Hk = H(x0)
@@ -44,6 +41,7 @@ def modified_newton(f,g,H,x0):
         mk = 0
         while m<20:
             if LineSearch(g,x0,rho**m,dk):
+                #rho**m shrinks it until the line search condition in satisfied
                 mk = m
                 break
             m +=1
