@@ -75,3 +75,21 @@ def grad_FWFD(f, x, h):
         gradf[i] = (f(x + h * ei) - f(x)) / h
 
     return gradf
+
+
+def armijo_condtition(f,x,alpha,c1,gradfk,pk):
+    left = f(x + alpha * pk)
+    right = f(x) + c1 * alpha * np.dot(gradfk,pk)
+    return left <= right
+
+def wolfe_condition(f, x, alpha, c1, c2, grad, pk):
+    armijo = armijo_condition(f, x, alpha, c1, grad, pk)
+    
+    if not armijo:
+        return False
+    
+    # Curvature condition (Strong Wolfe condition)
+    slope_condition = np.dot(grad, pk)
+    left = np.dot(grad, (x + alpha * pk - x))
+    right = c2 * slope_condition
+    return left >= right
