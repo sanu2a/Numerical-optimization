@@ -77,7 +77,7 @@ def grad_FWFD(f, x, h):
     return gradf
 
 
-def armijo_condtition(f,x,alpha,c1,gradfk,pk):
+def armijo_condition(f,x,alpha,c1,gradfk,pk):
     left = f(x + alpha * pk)
     right = f(x) + c1 * alpha * np.dot(gradfk,pk)
     return left <= right
@@ -93,3 +93,14 @@ def wolfe_condition(f, x, alpha, c1, c2, grad, pk):
     left = np.dot(grad, (x + alpha * pk - x))
     right = c2 * slope_condition
     return left >= right
+
+
+condition_function = {'armijo':armijo_condition,'wolfe':wolfe_condition}
+def backtrack_condition(condition_type,f,x,alpha,c1,c2,gradfk,pk):
+    condition_func = condition_function.get(condition_type)
+    if condition_func == armijo_condition:
+        return condition_func(f,x,alpha,c1,gradfk,pk)
+    elif condition_func == wolfe_condition:
+        return condition_func(f,x,alpha,c1,c2,gradfk,pk)
+    else:
+        raise ValueError("Invalid condition type")
