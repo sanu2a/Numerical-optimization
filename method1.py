@@ -3,7 +3,7 @@
 import numpy as np
 from tools import *
 #  rho, btmax, ro, c1, parameters of armijo condition to add in tools.py and to be imported
-def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.55 ,c1 = 0.4, c2 = 0.7, btmax = 10,condition_type = ['armijo','wolfe']):
+def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4, c2 = 0.7, btmax = 10,condition_type = 'wolfe'):
     
     """
     Modified Newton method for unconstrained optimization.
@@ -46,29 +46,32 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.55 ,c1 = 0.4
         
         Hk = Hessf(xk)
         beta = np.linalg.norm(Hk)
-
         Hii = np.diag(Hk)
         if np.all(Hii > 0):
             tau = 0
         else:
-            tau = beta / 2
-
-        Bk = Hk + tau * np.eye(n)  
-
+            tau = beta / 2  
         done = False
         while not done:
+            Bk = Hk + tau * np.eye(n)
             try:
                 L = np.linalg.cholesky(Bk)
                 done = True
             except:
                 #print("Cholesky failed")
-                tau = max(2 * tau, beta / 2) 
+                tau = max(2 * tau, beta / 2)
+                
+        y = np.linalg.solve(L, -gradfk)
+        pk = np.linalg.solve(L.T, y) 
+        
+        backtrackiter = 0
         while backtrackiter <  btmax:
             if backtrack_condition(condition_type,f,xk,alpha,c1,c2,gradfk,pk):
                 break
             alpha *= rho
             backtrackiter += 1
-
+        if backtrackiter == btmax : 
+            print("Backtracking not satisfied")
         xk = xk + alpha * pk
         x_seq.append(xk)
         f_vals.append(f(xk))
