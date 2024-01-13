@@ -1,68 +1,96 @@
-## Problems : 73 / 12 / 56 ? 
-
-## Problem 1 (12) : Generalization of the Brown function 1
-## Problem 1 (13) : Generalization of the Brown function 2
-
-from math import exp
+## Problem 1 (1) : Chained Roseenbrock Function
 import numpy as np 
 from method1 import *
 from method2 import *
-
+import matplotlib.pyplot as plt
 
 def F(x): 
-    
     n = np.shape(x)[0]
     Fx = 0
-    ## Generalization 1 ?
-    # for i in range(2, n):
-    #     Fx += (x[i-1] - 3)**2  + (x[i - 1] - x[i]) + exp(20*x[i-1] - x[i])
-
-    ## Generalization 2
     for i in range(1, n):
-        Fx += (x[i-1]**2)**(x[i]**2 + 1) + (x[i]**2)**(x[i-1]**2 + 1)
- 
+        Fx += 100*(x[i-1]**2 - x[i])**2 + (x[i-1] - 1)**2
     return Fx
 
-# def gradf(x): 
-#     n = np.shape(x)[0]
-#     gradF = np.zeros(n)
-    
-#     for i in range(2, n):
-#         gradF[i-2] += 2 * (x[i-2]**2)**(x[i-1]**2 + 1) * x[i-1]
-#         gradF[i-1] += 2 * (x[i-1]**2)**(x[i-2]**2 + 1) * x[i-2]
-    
-#     return gradF
+def gradf(p):
+    N = len(p)
+    df_dp = np.zeros(N)
+    # First partial derivative
+    df_dp[0] = -400 * p[0] * (p[1] - p[0]**2) - 2 * (1 - p[0])
+    # Intermediate partial derivatives
+    for j in range(1, N-1):
+        df_dp[j] = 200 * (p[j] - p[j - 1]**2) - 400 * p[j] * (p[j+1] - p[j]**2) - 2 * (1 - p[j])
+    # Last partial derivativep
+    df_dp[N - 1] = 200 * (p[N - 1] - p[N - 2]**2)
 
-# def run_test(method, f, gradf, hessf, x0, kmax, tolgrad=1e-5):
-#     print("========== Test Results ==========")
-#     print("Method:", method.__name__)
-#     print("Starting point:", x0)
-#     xk, fk, k, x_seq, f_vals = method(f, gradf, hessf, x0, kmax, tolgrad)
-#     print("Final solution xk =", xk)
-#     print("Minimum function value =", round(fk, 3))
-#     print("Number of iterations =", k)
+    return df_dp
 
 
-def run_test_fd(method, f, x0, kmax, fd, tolgrad):
-    dictio = {"c" : "Centred", "FW" : "Forward"} 
-    print(f"========== Test Results {dictio[fd]} ==========")
-    print("Method:", method.__name__)
-    #print("Starting point:", x0)
-    xk, fk, k, x_seq, f_vals = method(f, x0, kmax, fd, tolgrad)
-    #print("Final solution xk =", xk)
-    print("MSE of the solution !", np.linalg.norm(xk))
-    print("Minimum function value =", round(fk, 3))
+def hessf(x):
+    n = len(x)
+    hessian = np.zeros((n, n))
+    # Diagonal elements
+    hessian[0, 0] = 1200 * x[0]**2 - 400 * x[1] + 2
+    hessian[n - 1, n - 1] = 200
+
+    # Off-diagonal elements
+    for i in range(1, n - 1):
+        # Diagonal elements
+        hessian[i, i] = 202 + 1200 * x[i]**2 - 400 * x[i + 1]
+        # Upper diagonal elements
+        hessian[i, i - 1] =  hessian[i - 1, i ] = -400 * x[i - 1]
+        # # # Lower diagonal elements
+        hessian[i , i + 1] =  hessian[i+1, i] =  -400 * x[i]
+    return hessian
+
+
+
+
+def run_test(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho):
+    print("========== Test Results Modifed newton ==========")
+    # print("Starting point:", x0)
+    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton(f, gradf, hessf, x0, kmax,tolgrad, rho, c1, btmax)
+    #("Final solution xk =", x_seq[-1])
+    print("Minimum function value =", f_vals[-1])
     print("Number of iterations =", k)
-    
+    print(grad_norm_seq[-1])
+    plt.plot(range(k), f_vals)
+    plt.show()
+    plt.plot(range(k), grad_norm_seq)
+    plt.show()
+    plt.plot(range(k)[1:], btseq)
+    plt.show()
+
+
+def run_test_fd(f, x0, kmax, fd, tolgrad):
+    print("========== Test Results ==========")
+    # print("Starting point:", x0)
+    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton_FD(f,x0,kmax,fd,tolgrad,rho,c1,btmax)
+    # print(grad_norm_seq)
+    print("Final solution xk =", x_seq[-1])
+    print("Minimum function value =", f_vals[-1])
+    print("Number of iterations =", k)
+    print(grad_norm_seq[-1])
+    plt.plot(range(k), f_vals)
+    plt.show()
+    plt.plot(range(k), grad_norm_seq)
+    plt.show()
+    plt.plot(range(k)[1:], btseq)
+    plt.show()
+
+
+
+
 if __name__ == '__main__':
     np.random.seed(42)  
     kmax = 1000
-    tolgrad = 1e-7
     dict_val = {1 : -1, 0: 1}
+    tolgrad = 1e-5
+    btmax = 70
+    rho = 0.8
+    c1 = 1e-4
+    n = 10**3
 
-    n = 10*3
     #x0 = np.array([dict_val[i%2] for i in range(n)])
     x0 = np.array([dict_val[i%2] for i in range(n)])
-    ## MNM with FD ! 
-    run_test_fd(modified_newton_FD, F, x0, kmax,"FW", tolgrad)
-    run_test_fd(modified_newton_FD, F, x0, kmax, "c", tolgrad)
+    # run_test_fd(F,x0,kmax,"C",tolgrad)
+    run_test(F, gradf, hessf, x0, kmax, tolgrad,btmax, c1, rho)

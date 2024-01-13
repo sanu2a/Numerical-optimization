@@ -1,5 +1,5 @@
 #Method1 : Modified Newton Method
-
+from scipy.sparse.linalg import gmres
 import numpy as np
 from tools import *
 #  rho, btmax, ro, c1, parameters of armijo condition to add in tools.py and to be imported
@@ -28,26 +28,20 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4
         f_vals : Vector containing the value of f at each generated point at each iteration.
     """
     
-    x_seq, f_vals = [], []
-    k = 0
+    x_seq, f_vals, btseq, grad_norm_seq = [], [], [], []
+    k = 1
     xk = x0
     x_seq.append(xk)
     f_vals.append(f(xk))
     n = np.shape(x0)[0]
-    alpha = 1
-    
-    while k < kmax:
-        gradfk = gradf(xk)
-        gradfk_norm = np.linalg.norm(gradfk)
-
-        if gradfk_norm < tolgrad:
-            print("===Stopping criterion of Tolerance of the gradient satisfied===")
-            break
-        
+    gradfk = gradf(xk)
+    gradfk_norm = np.linalg.norm(gradfk)
+    grad_norm_seq.append(gradfk_norm)
+    while k < kmax and gradfk_norm >= tolgrad:
         Hk = Hessf(xk)
         beta = np.linalg.norm(Hk)
-        Hii = np.diag(Hk)
-        if np.all(Hii > 0):
+        aii = min(np.diag(Hk))
+        if aii>0:
             tau = 0
         else:
             tau = beta / 2  
@@ -63,16 +57,22 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4
                 
         y = np.linalg.solve(L, -gradfk)
         pk = np.linalg.solve(L.T, y) 
-        
+        # y, _ = gmres(L, -gradfk)
+        # pk, _ = gmres(L.T, y) 
         backtrackiter = 0
+        alpha = 1
         while backtrackiter <  btmax:
-            if backtrack_condition(condition_type,f,xk,alpha,c1,c2,gradfk,pk):
+            if armijo_condition(f,xk,alpha,c1,gradfk,pk):
                 break
             alpha *= rho
             backtrackiter += 1
         if backtrackiter == btmax : 
             print("Backtracking not satisfied")
+        btseq.append(backtrackiter)
         xk = xk + alpha * pk
+        gradfk = gradf(xk)
+        gradfk_norm = np.linalg.norm(gradfk)
+        grad_norm_seq.append(gradfk_norm)
         x_seq.append(xk)
         f_vals.append(f(xk))
         k += 1
@@ -80,4 +80,4 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4
     if k == kmax:
         print("The optimization stopped because we reached the maximum number of iterations")
 
-    return xk, f(xk), k, x_seq, f_vals
+    return k, x_seq, f_vals, grad_norm_seq, btseq

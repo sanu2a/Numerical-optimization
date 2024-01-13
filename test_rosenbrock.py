@@ -4,6 +4,7 @@ import numpy as np
 import numpy as np
 from method1 import modified_newton
 from method2 import modified_newton_FD
+import matplotlib.pyplot as plt 
 
 def Rosenbrock():
     """
@@ -25,38 +26,54 @@ def Rosenbrock():
     hessf = lambda x: np.array([[h11(x), h12(x)], [h21(x), h22(x)]])
     return f, gradf, hessf
 
-def run_test(method, f, gradf, hessf, x0, kmax, tolgrad=1e-5):
+def run_test(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho):
+    print("========== Test Results Modifed newton metod on rosenbrock function ==========")
+    print("Starting point:", x0)
+    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton(f, gradf, hessf, x0, kmax,tolgrad, rho, c1, btmax)
+    #print("Final solution xk =", x_seq[-1])
+    print("Minimum function value =", f_vals[-1])
+    print("Number of iterations =", k)
+    print("Finsl gradient : " , grad_norm_seq[-1])
+    plt.plot(range(k), f_vals)
+    plt.show()
+    plt.plot(range(k), grad_norm_seq)
+    plt.show()
+    
+
+
+def run_test_fd(f, x0, kmax, fd, tolgrad):
     print("========== Test Results ==========")
-    print("Method:", method.__name__)
     print("Starting point:", x0)
-    xk, fk, k, x_seq, f_vals = method(f, gradf, hessf, x0, kmax, tolgrad)
-    print("Final solution xk =", xk)
-    print("Minimum function value =", round(fk, 3))
+    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton_FD(f,x0,kmax,fd,tolgrad,rho,c1,btmax)
+    # print(grad_norm_seq)
+    #print("Final solution xk =", x_seq[-1])
+    print("Minimum function value =", f_vals[-1])
     print("Number of iterations =", k)
+    print("Finsl gradient : " , grad_norm_seq[-1])
+    plt.plot(range(k), f_vals)
+    plt.show()
+    plt.plot(range(k), grad_norm_seq)
+    plt.show()
+    plt.plot(range(k)[1:], btseq)
+    plt.show()
 
 
-def run_test_fd(method, f, x0, kmax, fd, tolgrad):
-    dictio = {"c" : "Centred", "FW" : "Forward"} 
-    print(f"========== Test Results {dictio[fd]} ==========")
-    print("Method:", method.__name__)
-    print("Starting point:", x0)
-    xk, fk, k, x_seq, f_vals = method(f, x0, kmax, fd, tolgrad)
-    print("Final solution xk =", xk)
-    print("Minimum function value =", round(fk, 3))
-    print("Number of iterations =", k)
 if __name__ == '__main__':
     np.random.seed(42)  
     f, gradf, hessf = Rosenbrock()
     x01 = np.array([1.2, 1.2])
     x02 = np.array([-1.2, 1])
     kmax = 1000
-    tolgrad = 1e-5
+    tolgrad = 1e-7
+    btmax = 50
+    rho = 0.8
+    c1 = 1e-4
+    run_test(f, gradf, hessf, x02, kmax, tolgrad,btmax, c1, rho)
+    # run_test(f, gradf, hessf, x01, kmax, tolgrad,btmax, c1, rho)
+    ## For the finite differences the centred is more accurate than the FW
+    # run_test_fd(f,x02,kmax,"C",tolgrad)
+    # run_test_fd(f,x01,kmax,"C",tolgrad)
 
-    run_test(modified_newton, f, gradf, hessf, x01, kmax, tolgrad)
-    run_test(modified_newton, f, gradf, hessf, x02, kmax, tolgrad)
-
-    run_test_fd(modified_newton_FD, f, x01, kmax,"c", tolgrad)
-    run_test_fd(modified_newton_FD, f, x02, kmax, "FW", tolgrad)
 
 
     
