@@ -2,7 +2,8 @@
 ## including armijo conditions and finite differences for the gradient adm the hessian functions 
 
 import numpy as np
-
+from scipy.optimize import approx_fprime
+import numdifftools as nd
 def grad_CFD(f, x, h):
     """
     Compute the gradient of a function using Central Finite Differences.
@@ -22,8 +23,13 @@ def grad_CFD(f, x, h):
         ei = np.zeros(n)
         ei[i] = 1
         gradf[i] = (f(x + h * ei) - f(x - h * ei)) / (2 * h)
-
+    gradf = nd.Gradient(f)(x)
     return gradf
+
+
+
+# def hessf(gradf, x, h):
+#     n = np.shape(x)[0]
 
 def hessf_FD(f, x, h):
     """
@@ -37,44 +43,85 @@ def hessf_FD(f, x, h):
     Returns:
     - hessf: The computed Hessian matrix.
     """
-    n = np.shape(x)[0]
-    hessf = np.empty(shape=(n, n))
+    n = x.shape[0]
+    hessf = np.zeros((n, n))
 
     for i in range(n):
         ei = np.zeros(n)
         ei[i] = 1
-        hessf[i, i] = (f(x + h * ei) - 2 * f(x) + f(x - h * ei)) / (h**2)
+        x_plus_h_ei = x + h * ei
+        x_minus_h_ei = x - h * ei
 
-        for j in range(i + 1, n):
+        hessf[i, i] = (f(x_plus_h_ei) - 2 * f(x) + f(x_minus_h_ei)) / (h**2)
+
+        if i < n - 1:
             ej = np.zeros(n)
-            ej[j] = 1
-            hessf[j, i] = (f(x + h * ei + h * ej) - f(x + h * ei) - f(x + h * ej) + f(x)) / h**2
-            # Assuming always working on the symmetric case
-            hessf[i, j] = hessf[j, i]
+            ej[i + 1] = 1
+            x_plus_h_ej = x + h * ej
+            x_plus_h_ei_plus_h_ej = x + h * ei + h * ej
+
+            hessf[i + 1, i] = (f(x_plus_h_ei_plus_h_ej) - f(x_plus_h_ei) - f(x_plus_h_ej) + f(x)) / h**2
+            hessf[i, i + 1] = hessf[i + 1, i]
 
     return hessf
+    # hessf = nd.Hessian(f)([x])
+    # return hessf
 
-def grad_FWFD(f, x, h):
-    """
-    Compute the gradient of a function using Forward Finite Differences.
+# def hessf_FD(f, x, h):
+#     """
+#     Compute the Hessian matrix of a function using Central Finite Differences.
 
-    Parameters:
-    - f: The function to compute the gradient for.
-    - x: The point at which to compute the gradient.
-    - h: The step size for finite differences.
+#     Parameters:
+#     - f: The function to compute the Hessian for.
+#     - x: The point at which to compute the Hessian.
+#     - h: The step size for finite differences.
 
-    Returns:
-    - gradf: The computed gradient.
-    """
-    n = np.shape(x)[0]
-    gradf = np.empty(shape=n)
+#     Returns:
+#     - hessf: The computed Hessian matrix.
+#     """
 
-    for i in range(n):
-        ei = np.zeros(n)
-        ei[i] = 1
-        gradf[i] = (f(x + h * ei) - f(x)) / h
+#     n = x.shape[0]
+#     hessf = np.empty(shape=(n, n))
 
-    return gradf
+#     for i in range(n):
+#         ei = np.zeros(n)
+#         ei[i] = 1
+#         x_plus_h_ei = x + h * ei
+#         x_minus_h_ei = x - h * ei
+
+#         hessf[i, i] = (f(x_plus_h_ei) - 2 * f(x) + f(x_minus_h_ei)) / (h**2)
+
+#         for j in range(i + 1, n):
+#             ej = np.zeros(n)
+#             ej[j] = 1    
+#             x_plus_h_ej = x + h * ej
+#             x_plus_h_ei_plus_h_ej = x + h * ei + h * ej
+
+#             hessf[j, i] = (f(x_plus_h_ei_plus_h_ej) - f(x_plus_h_ei) - f(x_plus_h_ej) + f(x)) / h**2
+#             hessf[i, j] = hessf[j, i]
+
+#     return hessf
+# def grad_FWFD(f, x, h):
+#     """
+#     Compute the gradient of a function using Forward Finite Differences.
+
+#     Parameters:
+#     - f: The function to compute the gradient for.
+#     - x: The point at which to compute the gradient.
+#     - h: The step size for finite differences.
+
+#     Returns:
+#     - gradf: The computed gradient.
+#     """
+#     n = np.shape(x)[0]
+#     gradf = np.empty(shape=n)
+
+#     for i in range(n):
+#         ei = np.zeros(n)
+#         ei[i] = 1
+#         gradf[i] = (f(x + h * ei) - f(x)) / h
+
+#     return gradf
 
 
 def armijo_condition(f,x,alpha,c1,gradfk,pk):

@@ -1,5 +1,6 @@
 #Method1 : Modified Newton Method
-from scipy.sparse.linalg import gmres
+from scipy.optimize import line_search
+from scipy.sparse.linalg import gmres, lgmres, norm
 import numpy as np
 from tools import *
 #  rho, btmax, ro, c1, parameters of armijo condition to add in tools.py and to be imported
@@ -39,26 +40,33 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4
     grad_norm_seq.append(gradfk_norm)
     while k < kmax and gradfk_norm >= tolgrad:
         Hk = Hessf(xk)
-        beta = np.linalg.norm(Hk)
-        aii = min(np.diag(Hk))
+        beta = 1e-3
+        aii = min(Hk.diagonal())
         if aii>0:
             tau = 0
         else:
-            tau = beta / 2  
+            tau = - aii + beta 
         done = False
         while not done:
             Bk = Hk + tau * np.eye(n)
             try:
+                # print(1,2)
                 L = np.linalg.cholesky(Bk)
                 done = True
             except:
                 #print("Cholesky failed")
-                tau = max(2 * tau, beta / 2)
+                tau = max(10 * tau, beta)
                 
         y = np.linalg.solve(L, -gradfk)
         pk = np.linalg.solve(L.T, y) 
-        # y, _ = gmres(L, -gradfk)
-        # pk, _ = gmres(L.T, y) 
+        # y, ex1 = gmres(L, -gradfk, tol = 1e-7)
+        # # if ex1 != 0 :
+        # #     y = np.linalg.solve(L, -gradfk)
+        # pk, ex2 = gmres(L.T, y, tol = 1e-7) 
+        # if ex2 != 0 :
+        #     pk = np.linalg.solve(L.T, y) 
+        # pk = np.linalg.solve(Bk, -gradf)
+        # pk, ex1 = gmres(Bk, -gradfk, tol = 1e-10)
         backtrackiter = 0
         alpha = 1
         while backtrackiter <  btmax:
@@ -69,6 +77,7 @@ def modified_newton(f, gradf, Hessf, x0, kmax, tolgrad=1e-5,rho = 0.5 ,c1 = 1e-4
         if backtrackiter == btmax : 
             print("Backtracking not satisfied")
         btseq.append(backtrackiter)
+        # alpha = line_search(f, gradf, xk, pk, maxiter = 100)[0]
         xk = xk + alpha * pk
         gradfk = gradf(xk)
         gradfk_norm = np.linalg.norm(gradfk)

@@ -3,6 +3,7 @@
 import numpy as np
 from tools import *
 from scipy.sparse.linalg import gmres
+import numdifftools as nd
 
 
 
@@ -31,9 +32,6 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
     gradf_fd = grad_CFD
     hessf_fd = hessf_FD
 
-    if fd == "FW":
-        gradf_fd = grad_FWFD
-
 
     x_seq, f_vals = [], []
     k = 1
@@ -47,13 +45,14 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
     grad_norm_seq.append(gradfk_norm)
     
     while k < kmax and gradfk_norm >= tolgrad:
+        #print(k)
         Hk = hessf_fd(f, xk, hhess)
-        beta = np.linalg.norm(Hk)
-        Hii = np.diag(Hk)
-        if np.all(Hii > 0):
+        beta = 10e-3
+        aii = min(np.diag(Hk))
+        if aii > 0:
             tau = 0
         else:
-            tau = beta / 2
+            tau =  - aii + beta 
             
         done = False
         while not done:
@@ -62,8 +61,8 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
                 L = np.linalg.cholesky(Bk)
                 done = True
             except:
-                tau = max(2 * tau, beta / 2)
-                
+                tau = max(2 * tau, beta)
+        
         y = np.linalg.solve(L, -gradfk)
         pk = np.linalg.solve(L.T, y) 
         # y, _ = gmres(L, -gradfk)

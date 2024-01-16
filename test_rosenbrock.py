@@ -34,9 +34,9 @@ def run_test(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho):
     print("Minimum function value =", f_vals[-1])
     print("Number of iterations =", k)
     print("Finsl gradient : " , grad_norm_seq[-1])
-    plt.plot(range(k), f_vals)
+    plt.semilogy(range(k), f_vals)
     plt.show()
-    plt.plot(range(k), grad_norm_seq)
+    plt.semilogy(range(k), grad_norm_seq)
     plt.show()
     
 
