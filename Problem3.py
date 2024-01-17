@@ -1,4 +1,4 @@
-## Problem 3  : Chained Roseenbrock Function
+## Problem 75 
 import numpy as np 
 from method1 import *
 from method2 import *
