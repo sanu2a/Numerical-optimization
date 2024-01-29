@@ -6,6 +6,9 @@ from method1 import modified_newton
 from method2 import modified_newton_FD
 from timeit import default_timer as timer
 import matplotlib.pyplot as plt 
+from tools import *
+
+
 
 def Rosenbrock():
     """
@@ -29,7 +32,7 @@ def Rosenbrock():
 
 
 
-def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, fd, save_plots = False):
+def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, fd, save_plots = True):
     print("========== Test Results Modifed newton method on rosenbrock function ==========")
     print("Starting point:", x0)
     start = timer()
@@ -47,6 +50,7 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     print("Minimum function value = ", f_vals2[-1])
     print("Number of iterations = ", k2)
     print("Final gradient : " , grad_norm_seq2[-1])
+    print("norm ", np.linalg.norm(x0 - x_star))
     print("Time for Rosenbrock in R^2 using MN and FD is " , end - start, "second")
 
     # Plotting for Objective Function Value
@@ -67,13 +71,32 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     plt.semilogy(range(k1 + 1), grad_norm_seq1, label='MN with Exact Hessian')
     plt.semilogy(range(k2 + 1), grad_norm_seq2, label='MN with CFD')
     plt.xlabel('Iterations')
-    plt.title(f'Gradient Norm (log scale) over iterations\nStarting point: {x0}')
+    plt.title(f'Gradient Norm over iterations\nStarting point: {x0}')
     plt.ylabel('Gradient Norm')
     plt.legend()
 
     if save_plots:
         plt.savefig(f'gradient_norm_plot{x0}.png')
 
+    plt.show()
+    rate1 = rate(x_seq1[1:], x_star)
+    rate2 = rate(x_seq2[1:], x_star)
+    mean_rate1 = np.mean(rate1)
+    mean_rate2 = np.mean(rate2)
+
+    # Plot the convergence rate for each method
+    plt.plot(range(k1-2), rate1, label='rate_cv_MN')
+    plt.plot(range(k2-2), rate2, label='rate_cv_MNFD')
+
+    # Add vertical lines for the mean convergence rate
+    plt.axhline(mean_rate1, color='red', linestyle='--', label=f'Mean Rate MN: {mean_rate1:.2f}')
+    plt.axhline(mean_rate2, color='blue', linestyle='--', label=f'Mean Rate MNFD: {mean_rate2:.2f}')
+
+    plt.xlabel('Iterations')
+    plt.title(f'Convergence Rate Of Implemented Methods')
+    plt.ylabel('Convergence rate')
+    plt.legend()
+    plt.savefig(f'cv_rate_rosen R2{x0}.png')
     plt.show()
 
 

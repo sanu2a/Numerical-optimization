@@ -43,7 +43,14 @@ def hessf(x):
               diags([up_sub_diagonal], [-1], shape=(n, n)).transpose()
     return Hessian
 
-    
+
+
+
+def rate(x_seq):
+    differences = [np.linalg.norm(x_seq[n] - x_seq[n - 1]) for n in range(1, len(x_seq))]
+    q = [np.log(differences[n] / differences[n - 1]) / np.log(differences[n - 1] / differences[n - 2]) for n in range(2, len(differences))]
+    return q
+
 def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, fd,p, save_plots = False, precond = False):
     print("========== Test Results Modifed newton method on Problem2 ==========")
     start = timer()
@@ -71,8 +78,8 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     plt.legend()
 
     if save_plots:
-        plt.savefig(f'objective_function_plotPb2{precond} 10^{p}.png')
-    #plt.show()
+        plt.savefig(f'objective_function_plotPb3{precond} 10^{p}.png')
+    plt.show()
 
 
     plt.semilogy(range(k1 + 1), grad_norm_seq1, label='MN with Exact Hessian')
@@ -83,23 +90,44 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     plt.legend()
 
     if save_plots:
-        plt.savefig(f'gradient_norm_plotPb2{precond}10^{p}.png')
+        plt.savefig(f'gradient_norm_plotPb3{precond}10^{p}.png')
 
-    #plt.show()
+    plt.show()
+    rate1 = rate(x_seq1[1:])
+    rate2 = rate(x_seq2[1:])
+    mean_rate1 = np.mean(rate1)
+    mean_rate2 = np.mean(rate2)
+
+    # Plot the convergence rate for each method
+    plt.plot(range(k1-3), rate1, label='rate_cv_MN')
+    plt.plot(range(k2-3), rate2, label='rate_cv_MNFD')
+
+    # Add vertical lines for the mean convergence rate
+    plt.axhline(mean_rate1, color='red', linestyle='--', label=f'Mean Rate MN: {mean_rate1:.2f}')
+    plt.axhline(mean_rate2, color='blue', linestyle='--', label=f'Mean Rate MNFD: {mean_rate2:.2f}')
+
+    plt.xlabel('Iterations')
+    plt.title(f'Convergence Rate Of Implemented Methods')
+    plt.ylabel('Convergence rate')
+    plt.legend()
+    plt.savefig(f'cv_rate_Pb3_for_10^{p}.png')
+    plt.show()
+
 
 if __name__ == '__main__':
     np.random.seed(42)  
     kmax = 2000 
     tolgrad = 1e-5
     btmax = 100
-    rho =  0.9 ## 0.3
+    rho =  0.4 ## 0.3
     c1 = 1e-4
     p = 3
     n = 10**p
+
     # Starting point
     x0 = np.array([-1.2 for i in range(n-1)])
     x0 = np.append(x0, -1)
     x_star = np.ones_like(x0)
-    report_results(F, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, "C",p, save_plots = True, precond = True)
+    #report_results(F, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, "C",p, save_plots = True, precond = True)
     report_results(F, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, "C", p,save_plots = True, precond = False)
 

@@ -3,6 +3,12 @@
 
 import numpy as np
 from scipy.optimize import approx_fprime
+
+def rate(x_seq, x_star):
+    e = [np.linalg.norm(x - x_star) for x in x_seq]
+    q = [np.log(e[n+1]/e[n])/np.log(e[n]/e[n-1]) for n in range(1, len(e) -1 , 1)]
+    return q
+
 def grad_CFD(f, x, h):
     """
     Compute the gradient of a function using Central Finite Differences.

@@ -2,7 +2,6 @@
 import numpy as np 
 from method1 import *
 from method2 import *
-from method3 import *
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from timeit import default_timer as timer
@@ -34,7 +33,15 @@ def hessf(x):
 
 
 
+def compute_rate_of_convergence(x_seq, x_star):
+    # Compute the rate of convergence using the formula
+    # Rate of Convergence = log(error_{k+1} / error_k) / log(step_{k+1} / step_k)
+    errors = [norm(x - x_star) for x in x_seq]
+    steps = [norm(x_seq[i + 1] - x_seq[i]) for i in range(len(x_seq) - 1)]
 
+    log_ratios = [np.log(errors[i + 1] / errors[i]) / np.log(steps[i + 1] / steps[i]) for i in range(len(errors) - 1)]
+    
+    return np.mean(log_ratios)
 
 def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, fd,p, save_plots = False):
     print("========== Test Results Modifed newton method with FD on Problem1 ==========")
@@ -54,7 +61,6 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     print("Minimum function value = ", f_vals1[-1])
     print("Number of iterations = ", k1)
     print("Final gradient : " , grad_norm_seq1[-1])
-
     # Plotting for Objective Function Value
     plt.semilogy(range(k1 + 1), f_vals1, label='MN with Exact Hessian')
     plt.semilogy(range(k2 + 1), f_vals2, label='MN with CFD')
@@ -65,7 +71,7 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
 
     if save_plots:
         plt.savefig(f'objective_function_plotPb1 for 10^{p}.png')
-    #plt.show()
+    plt.show()
 
 
     plt.semilogy(range(k1 + 1), grad_norm_seq1, label='MN with Exact Hessian')
@@ -78,7 +84,29 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
     if save_plots:
         plt.savefig(f'gradient_norm_plotPb1 for 10^{p}.png')
 
-    #plt.show()
+    plt.show()
+    rate1 = rate(x_seq1[1:], x_star)
+    rate2 = rate(x_seq2[1:], x_star)
+    mean_rate1 = np.mean(rate1)
+    mean_rate2 = np.mean(rate2)
+
+    # Plot the convergence rate for each method
+    plt.plot(range(k1-2), rate1, label='rate_cv_MN')
+    plt.plot(range(k2-2), rate2, label='rate_cv_MNFD')
+
+    # Add vertical lines for the mean convergence rate
+    plt.axhline(mean_rate1, color='red', linestyle='--', label=f'Mean Rate MN: {mean_rate1:.2f}')
+    plt.axhline(mean_rate2, color='blue', linestyle='--', label=f'Mean Rate MNFD: {mean_rate2:.2f}')
+
+    plt.xlabel('Iterations')
+    plt.title(f'Convergence Rate Of Implemented Methods')
+    plt.ylabel('Convergence rate')
+    plt.legend()
+    plt.savefig(f'cv_rate_Pb1_for_10^{p}.png')
+    plt.show()
+
+    
+    
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ from method2 import *
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from timeit import default_timer as timer
+from tools import *
 
 def F(x):
     F_v = 0
@@ -41,7 +42,6 @@ def hessf(x):
     Hessf = sp.diags([up_sub_diag, main_diag], [-1, 0], shape=(n, n))
     Hessf = Hessf + Hessf.T - sp.diags(main_diag, 0)
     return Hessf
-
 
 
 
@@ -87,7 +87,28 @@ def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, f
         plt.savefig(f'gradient_norm_plotPb2 for 10^{p}.png')
 
     plt.show()
+    
+    rate1 = rate(x_seq1[1:], x_star)
+    rate2 = rate(x_seq2[1:], x_star)
+    mean_rate1 = np.mean(rate1)
+    mean_rate2 = np.mean(rate2)
 
+    # Plot the convergence rate for each method
+    plt.plot(range(k1-2), rate1, label='rate_cv_MN')
+    plt.plot(range(k2-2), rate2, label='rate_cv_MNFD')
+
+    # Add vertical lines for the mean convergence rate
+    plt.axhline(mean_rate1, color='red', linestyle='--', label=f'Mean Rate MN: {mean_rate1:.2f}')
+    plt.axhline(mean_rate2, color='blue', linestyle='--', label=f'Mean Rate MNFD: {mean_rate2:.2f}')
+
+    plt.xlabel('Iterations')
+    plt.title(f'Convergence Rate Of Implemented Methods')
+    plt.ylabel('Convergence rate')
+    plt.legend()
+    plt.savefig(f'cv_rate_Pb2_for_10^{p}.png')
+    plt.show()
+
+    
 
 
 
@@ -97,7 +118,7 @@ if __name__ == '__main__':
     dict_val = {0 : -1.2, 1: 1}
     tolgrad = 1e-6
     btmax = 100
-    rho = 0.8 ## 0.3
+    rho = 0.4 ## 0.3
     c1 = 1e-4
     p = 3
     n = 10**p
