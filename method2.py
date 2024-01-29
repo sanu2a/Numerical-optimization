@@ -3,12 +3,12 @@
 import numpy as np
 from tools import *
 from scipy.sparse.linalg import gmres
-import numdifftools as nd
+import scipy.sparse.linalg as spla
 
 
 
 #  rho, btmax, c1, parameters of armijo condition to add in tools.py and to be imported
-def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
+def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax, precond = False):
     """
     Modified Newton method with finite differences.
 
@@ -31,10 +31,10 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
     hhess = np.sqrt(hgrad)
     gradf_fd = grad_CFD
     hessf_fd = hessf_FD
-
+    n = x0.shape[0]
 
     x_seq, f_vals = [], []
-    k = 1
+    k = 0
     xk = x0
     x_seq.append(xk)
     f_vals.append(f(xk))
@@ -43,11 +43,10 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
     gradfk = gradf_fd(f, xk, hgrad)
     gradfk_norm = np.linalg.norm(gradfk)
     grad_norm_seq.append(gradfk_norm)
-    
+    beta = 1e-3
+
     while k < kmax and gradfk_norm >= tolgrad:
-        #print(k)
         Hk = hessf_fd(f, xk, hhess)
-        beta = 10e-3
         aii = min(np.diag(Hk))
         if aii > 0:
             tau = 0
@@ -61,12 +60,16 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
                 L = np.linalg.cholesky(Bk)
                 done = True
             except:
-                tau = max(2 * tau, beta)
-        
-        y = np.linalg.solve(L, -gradfk)
-        pk = np.linalg.solve(L.T, y) 
-        # y, _ = gmres(L, -gradfk)
-        # pk, _ = gmres(L.T, y) 
+                tau = max(10 * tau, beta)
+        if precond == False:
+            y = np.linalg.solve(L, -gradfk)
+            pk = np.linalg.solve(L.T, y) 
+        else : 
+            M2 = spla.spilu(Bk)
+            M_x = lambda x: M2.solve(x)
+            M = spla.LinearOperator((n,n), M_x)
+            pk, _ = spla.gmres(Bk,-gradfk,M=M)
+            
         alpha = 1
         backtrackiter = 0
         while backtrackiter <  btmax:
@@ -74,8 +77,7 @@ def modified_newton_FD(f, x0, kmax, fd, tolgrad, rho ,c1 , btmax):
                 break
             alpha *= rho
             backtrackiter += 1
-        # if backtrackiter == btmax : 
-        #     print("Max backtrack reached")
+
         btseq.append(backtrackiter)
         xk = xk + alpha * pk
         x_seq.append(xk)

@@ -4,6 +4,7 @@ import numpy as np
 import numpy as np
 from method1 import modified_newton
 from method2 import modified_newton_FD
+from timeit import default_timer as timer
 import matplotlib.pyplot as plt 
 
 def Rosenbrock():
@@ -26,36 +27,57 @@ def Rosenbrock():
     hessf = lambda x: np.array([[h11(x), h12(x)], [h21(x), h22(x)]])
     return f, gradf, hessf
 
-def run_test(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho):
-    print("========== Test Results Modifed newton metod on rosenbrock function ==========")
-    print("Starting point:", x0)
-    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton(f, gradf, hessf, x0, kmax,tolgrad, rho, c1, btmax)
-    #print("Final solution xk =", x_seq[-1])
-    print("Minimum function value =", f_vals[-1])
-    print("Number of iterations =", k)
-    print("Finsl gradient : " , grad_norm_seq[-1])
-    plt.semilogy(range(k), f_vals)
-    plt.show()
-    plt.semilogy(range(k), grad_norm_seq)
-    plt.show()
-    
 
 
-def run_test_fd(f, x0, kmax, fd, tolgrad):
-    print("========== Test Results ==========")
+def report_results(f, gradf, hessf, x0, kmax, tolgrad, btmax, c1, rho, x_star, fd, save_plots = False):
+    print("========== Test Results Modifed newton method on rosenbrock function ==========")
     print("Starting point:", x0)
-    k, x_seq, f_vals, grad_norm_seq ,btseq = modified_newton_FD(f,x0,kmax,fd,tolgrad,rho,c1,btmax)
-    # print(grad_norm_seq)
-    #print("Final solution xk =", x_seq[-1])
-    print("Minimum function value =", f_vals[-1])
-    print("Number of iterations =", k)
-    print("Finsl gradient : " , grad_norm_seq[-1])
-    plt.plot(range(k), f_vals)
+    start = timer()
+    k1, x_seq1, f_vals1, grad_norm_seq1 ,btseq1 = modified_newton(f, gradf, hessf, x0, kmax,tolgrad, rho, c1, btmax)
+    end = timer()
+    print("Time for Rosenbrock in R^2 using MN is " , end - start, "second")
+    print("Minimum function value = ", f_vals1[-1])
+    print("Number of iterations = ", k1)
+    print("Final gradient : " , grad_norm_seq1[-1])
+    print("========== Test Results Modifed newton method with FD on rosenbrock function ==========")
+    print("Starting point:", x0)
+    start = timer()
+    k2, x_seq2, f_vals2, grad_norm_seq2 ,btseq2 = modified_newton_FD(f,x0,kmax,fd,tolgrad,rho,c1,btmax)
+    end = timer()
+    print("Minimum function value = ", f_vals2[-1])
+    print("Number of iterations = ", k2)
+    print("Final gradient : " , grad_norm_seq2[-1])
+    print("Time for Rosenbrock in R^2 using MN and FD is " , end - start, "second")
+
+    # Plotting for Objective Function Value
+    plt.semilogy(range(k1 + 1), f_vals1, label='MN with Exact Hessian')
+    plt.semilogy(range(k2 + 1), f_vals2, label='MN with CFD')
+    plt.xlabel('Iterations')
+    plt.title(f'Objective Function Value over iterations\nStarting point: {x0}')
+    plt.ylabel('Objective Function Value')
+    plt.legend()
+
+    if save_plots:
+        plt.savefig(f'objective_function_plot{x0}.png')
     plt.show()
-    plt.plot(range(k), grad_norm_seq)
+
+    # Initialize figure 
+
+    # Plotting for Gradient Norm
+    plt.semilogy(range(k1 + 1), grad_norm_seq1, label='MN with Exact Hessian')
+    plt.semilogy(range(k2 + 1), grad_norm_seq2, label='MN with CFD')
+    plt.xlabel('Iterations')
+    plt.title(f'Gradient Norm (log scale) over iterations\nStarting point: {x0}')
+    plt.ylabel('Gradient Norm')
+    plt.legend()
+
+    if save_plots:
+        plt.savefig(f'gradient_norm_plot{x0}.png')
+
     plt.show()
-    plt.plot(range(k)[1:], btseq)
-    plt.show()
+
+
+
 
 
 if __name__ == '__main__':
@@ -64,16 +86,13 @@ if __name__ == '__main__':
     x01 = np.array([1.2, 1.2])
     x02 = np.array([-1.2, 1])
     kmax = 1000
-    tolgrad = 1e-7
+    tolgrad = 1e-8
     btmax = 50
-    rho = 0.8
+    rho = 0.4
     c1 = 1e-4
-    run_test(f, gradf, hessf, x02, kmax, tolgrad,btmax, c1, rho)
-    # run_test(f, gradf, hessf, x01, kmax, tolgrad,btmax, c1, rho)
-    ## For the finite differences the centred is more accurate than the FW
-    # run_test_fd(f,x02,kmax,"C",tolgrad)
-    # run_test_fd(f,x01,kmax,"C",tolgrad)
-
+    x_star = np.array([1,1])
+    report_results(f, gradf, hessf, x01, kmax, tolgrad, btmax, c1, rho, x_star, "C", True)
+    report_results(f, gradf, hessf, x02, kmax, tolgrad, btmax, c1, rho, x_star, "C", True)
 
 
     
